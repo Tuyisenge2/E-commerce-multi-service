@@ -1,5 +1,18 @@
 # ShopTrove E-Commerce Platform
 
+[![Coverage Status](https://coveralls.io/repos/github/atlp-rwanda/hackers-ec-be/badge.svg?branch=develop)](https://coveralls.io/github/atlp-rwanda/hackers-ec-be?branch=develop)
+[![Maintainability](https://api.codeclimate.com/v1/badges/0f9cac2f0a2f7a9/maintainability)](https://codeclimate.com/github/atlp-rwanda/hackers-ec-be/maintainability)
+![Testing](https://img.shields.io/badge/Testing-Jest-brown?style=flat-square&labelColor=green)
+![Auth](https://img.shields.io/badge/Auth-Passport.js-yellow?style=flat-square&labelColor=%2327c2a0)
+![Code style](https://img.shields.io/badge/ESLint-Code%20style-%232796C2?style=flat-square&labelColor=%2396c900)
+![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
+
+[![TypeScript](https://skillicons.dev/icons?i=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://skillicons.dev/icons?i=nodejs)](https://nodejs.org/)
+[![PostgreSQL](https://skillicons.dev/icons?i=postgres)](https://www.postgresql.org/)
+[![Docker](https://skillicons.dev/icons?i=docker)](https://www.docker.com/)
+[![Jest](https://skillicons.dev/icons?i=jest)](https://jestjs.io/)
+
 ShopTrove is an e-commerce platform being reorganized from a single Express application into a modular monorepo of independently deployable services.
 
 ## Architecture
