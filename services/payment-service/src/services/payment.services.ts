@@ -19,8 +19,10 @@ import { getCart } from "../clients/cartClient";
 import { createOrder } from "../clients/orderClient";
 
 export const findUserCartById = async (userId: string, token?: string) => {
-	if (token) return await getCart(token) as cartModelAttributes;
-	return await read_function<cartModelAttributes>("Cart", "findOne", { where: { userId } });
+	if (token) return (await getCart(token)) as cartModelAttributes;
+	return await read_function<cartModelAttributes>("Cart", "findOne", {
+		where: { userId },
+	});
 };
 
 export const getOrCreateStripeCustomer = async (user: UserModelAttributes) => {
@@ -96,7 +98,16 @@ export const readOrderById = async (orderId: string) => {
 
 export const orderItems = async (cart: cartModelAttributes, token?: string) => {
 	if (token) {
-		return await createOrder({ userId: cart.userId, products: cart.products.map((product) => ({ id: product.id, quantity: product.quantity })) }, token);
+		return await createOrder(
+			{
+				userId: cart.userId,
+				products: cart.products.map((product) => ({
+					id: product.id,
+					quantity: product.quantity,
+				})),
+			},
+			token,
+		);
 	}
 	const order = await insert_function<OrderModelAttributes>("Order", "create", {
 		buyerId: cart.userId,

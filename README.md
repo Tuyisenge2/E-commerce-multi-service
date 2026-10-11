@@ -25,14 +25,14 @@ During migration, services reuse the existing PostgreSQL schema and user IDs. Da
 
 ## Services
 
-| Service | Responsibility | Port |
-|---|---|---:|
-| user-service | Users, authentication, roles, profiles | 3001 |
-| catalog-service | Products, categories, search, reviews, wishlists | 3002 |
-| cart-service | Shopping carts | 3003 |
-| order-service | Orders, sales, invoices, statistics | 3004 |
-| payment-service | Stripe and MTN MoMo payments | 3005 |
-| notification-service | Notifications, email, chat, realtime events | 3006 |
+| Service              | Responsibility                                   | Port |
+| -------------------- | ------------------------------------------------ | ---: |
+| user-service         | Users, authentication, roles, profiles           | 3001 |
+| catalog-service      | Products, categories, search, reviews, wishlists | 3002 |
+| cart-service         | Shopping carts                                   | 3003 |
+| order-service        | Orders, sales, invoices, statistics              | 3004 |
+| payment-service      | Stripe and MTN MoMo payments                     | 3005 |
+| notification-service | Notifications, email, chat, realtime events      | 3006 |
 
 The original monolith remains in `src/` as the reference implementation while extraction work continues.
 

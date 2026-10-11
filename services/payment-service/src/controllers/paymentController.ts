@@ -46,7 +46,10 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 			const loggedUser = (req as ExpandedRequest).user;
 			const condition = { where: { id: loggedUser?.id } };
 			const authToken = req.headers.authorization?.replace("Bearer ", "") ?? "";
-			const user = await getUserById(loggedUser?.id as string, authToken) as UserModelAttributes;
+			const user = (await getUserById(
+				loggedUser?.id as string,
+				authToken,
+			)) as UserModelAttributes;
 
 			const cart = (req as CartRequest).cart;
 			const line_items = lineCartItems(cart);
@@ -108,7 +111,10 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 			}
 
 			if (transaction.status === "SUCCESSFUL") {
-				order = await orderItems(cart, req.headers.authorization?.replace("Bearer ", ""));
+				order = await orderItems(
+					cart,
+					req.headers.authorization?.replace("Bearer ", ""),
+				);
 				if (transactionExist) {
 					await insert_function<PaymentsModelAttributes>(
 						"Payments",
@@ -117,7 +123,9 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 						{ where: { id: transactionExist.id } },
 					);
 				}
-				await clearCart(req.headers.authorization?.replace("Bearer ", "") ?? "");
+				await clearCart(
+					req.headers.authorization?.replace("Bearer ", "") ?? "",
+				);
 			}
 
 			return sendResponse(

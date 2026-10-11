@@ -10,15 +10,19 @@ import databaseModels from "./database/config/db.config";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session({
-	secret: process.env.SESSION_SECRET ?? "local-user-service-session",
-	resave: false,
-	saveUninitialized: false,
-}));
+app.use(
+	session({
+		secret: process.env.SESSION_SECRET ?? "local-user-service-session",
+		resave: false,
+		saveUninitialized: false,
+	}),
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/health", (_request, response) => response.json({ service: "user-service", status: "ok" }));
+app.get("/health", (_request, response) =>
+	response.json({ service: "user-service", status: "ok" }),
+);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1", profileRouter);
 app.use("/api/v1", roleRoutes);
@@ -31,10 +35,12 @@ app.get("/internal/users/:id", async (request, response) => {
 	return response.json(data);
 });
 
-connectionToDatabase().then(() => {
-	const port = Number(process.env.PORT ?? 3001);
-	app.listen(port, () => console.log(`user-service listening on ${port}`));
-}).catch((error) => {
-	console.error("Unable to connect to user database", error);
-	process.exit(1);
-});
+connectionToDatabase()
+	.then(() => {
+		const port = Number(process.env.PORT ?? 3001);
+		app.listen(port, () => console.log(`user-service listening on ${port}`));
+	})
+	.catch((error) => {
+		console.error("Unable to connect to user database", error);
+		process.exit(1);
+	});
