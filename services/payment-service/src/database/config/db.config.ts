@@ -32,6 +32,7 @@ const dialect_option = isLocal
 
 export const sequelizeConnection: Sequelize = new Sequelize(db_uri, {
 	dialect: "postgres",
+	define: { schema: process.env.DB_SCHEMA || "public" },
 	dialectOptions: dialect_option,
 	logging: false,
 	pool: {

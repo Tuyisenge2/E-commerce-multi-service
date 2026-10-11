@@ -1,0 +1,4 @@
+packages:
+  - "services/*-service"
+
+# The root monolith is intentionally excluded and continues to use npm.

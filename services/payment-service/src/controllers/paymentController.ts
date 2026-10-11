@@ -33,6 +33,8 @@ import {
 } from "../utils/keys";
 import { getToken } from "../utils/momoMethods";
 import { findUserById } from "../services/user.services";
+import { getUserById } from "../clients/userClient";
+import { clearCart } from "../clients/cartClient";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 	apiVersion: "2024-04-10",
@@ -43,11 +45,8 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 		if (req.query.method === "stripe") {
 			const loggedUser = (req as ExpandedRequest).user;
 			const condition = { where: { id: loggedUser?.id } };
-			const user = await read_function<UserModelAttributes>(
-				"User",
-				"findOne",
-				condition,
-			);
+			const authToken = req.headers.authorization?.replace("Bearer ", "") ?? "";
+			const user = await getUserById(loggedUser?.id as string, authToken) as UserModelAttributes;
 
 			const cart = (req as CartRequest).cart;
 			const line_items = lineCartItems(cart);
@@ -109,7 +108,7 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 			}
 
 			if (transaction.status === "SUCCESSFUL") {
-				order = await orderItems(cart);
+				order = await orderItems(cart, req.headers.authorization?.replace("Bearer ", ""));
 				if (transactionExist) {
 					await insert_function<PaymentsModelAttributes>(
 						"Payments",
@@ -118,7 +117,7 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 						{ where: { id: transactionExist.id } },
 					);
 				}
-				await database_models.Cart.destroy({ where: { id: cart.id } });
+				await clearCart(req.headers.authorization?.replace("Bearer ", "") ?? "");
 			}
 
 			return sendResponse(

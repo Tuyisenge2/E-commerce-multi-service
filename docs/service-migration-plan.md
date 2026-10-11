@@ -13,7 +13,7 @@ client -> gateway -> user | catalog | cart | order | payment | notification
                               \---------- PostgreSQL (initial migration) ----------/
 ```
 
-The shared database is temporary. Once boundaries are stable, each service can own its schema/database without changing the client-facing API.
+The services use one PostgreSQL database URL with separate schemas: `users`, `catalog`, `cart`, `orders`, `payments`, and `notifications`. Each service owns its Sequelize configuration and schema. A separate PostgreSQL database per service can be introduced later without changing the client-facing API.
 
 ## Migration order
 

@@ -38,7 +38,8 @@ const paymentMethods = (methods: Array<string>) => {
 
 const userHasCart = async (req: Request, res: Response, next: NextFunction) => {
 	const loggedUser = (req as ExpandedRequest).user;
-	const cart = await findUserCartById(loggedUser?.id);
+	const token = req.headers.authorization?.replace("Bearer ", "");
+	const cart = await findUserCartById(loggedUser?.id, token);
 	if (!cart) {
 		return sendResponse(
 			res,

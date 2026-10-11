@@ -1,8 +1,12 @@
 import express, { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { DataTypes, Model, Op, Sequelize } from "sequelize";
+import productRouter from "./routes/productRoutes";
+import categoryRouter from "./routes/categoryRoutes";
+import reviewRouter from "./routes/review.routes";
+import wishesRouter from "./routes/wishesRoutes";
 
-const db = new Sequelize(process.env.DB_DEV_URL ?? "", { dialect: "postgres", logging: false });
+const db = new Sequelize(process.env.DB_DEV_URL ?? "", { dialect: "postgres", define: { schema: process.env.DB_SCHEMA || "public" }, logging: false });
 const secret = process.env.ACCESS_TOKEN_SECRET ?? "local-user-service-secret";
 class Category extends Model { declare id: string; declare name: string; declare description: string; }
 Category.init({ id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true }, name: { type: DataTypes.STRING, allowNull: false }, description: { type: DataTypes.STRING, allowNull: false } }, { sequelize: db, tableName: "categories" });
@@ -14,11 +18,16 @@ class Wish extends Model { declare id: string; declare userId: string; declare p
 Wish.init({ id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true }, userId: { type: DataTypes.UUID, allowNull: false }, productId: { type: DataTypes.UUID, allowNull: false } }, { sequelize: db, tableName: "wishes" });
 
 type AuthRequest = Request & { user?: JwtPayload };
-const auth = (req: AuthRequest, res: Response, next: NextFunction) => { const token = req.headers.authorization?.replace("Bearer ", ""); if (!token) return res.status(401).json({ message: "Please login to continue" }); try { req.user = jwt.verify(token, secret); return next(); } catch { return res.status(401).json({ message: "Invalid or expired token" }); } };
+const auth = (req: AuthRequest, res: Response, next: NextFunction) => { const token = req.headers.authorization?.replace("Bearer ", ""); if (!token) return res.status(401).json({ message: "Please login to continue" }); try { const decoded = jwt.verify(token, secret); if (typeof decoded === "string") return res.status(401).json({ message: "Invalid token" }); req.user = decoded; return next(); } catch { return res.status(401).json({ message: "Invalid or expired token" }); } };
 const seller = (req: AuthRequest, res: Response, next: NextFunction) => req.user?.role === "SELLER" || req.user?.role === "ADMIN" ? next() : res.status(403).json({ message: "Seller access required" });
 const buyer = (req: AuthRequest, res: Response, next: NextFunction) => req.user?.role === "BUYER" ? next() : res.status(403).json({ message: "Buyer access required" });
 const app = express(); app.use(express.json());
+app.use("/api/v1/products-original", productRouter);
+app.use("/api/v1/categories-original", categoryRouter);
+app.use("/api/v1/reviews-original", reviewRouter);
+app.use("/api/v1/wishes-original", wishesRouter);
 app.get("/health", (_req, res) => res.json({ service: "catalog-service", status: "ok" }));
+app.get("/internal/products/:id", async (req, res) => { const item = await Product.findByPk(req.params.id); return item ? res.json(item) : res.status(404).json({ message: "Product not found" }); });
 app.get("/api/v1/categories", async (_req, res) => res.json(await Category.findAll()));
 app.get("/api/v1/categories/:id", async (req, res) => { const item = await Category.findByPk(req.params.id); return item ? res.json(item) : res.status(404).json({ message: "Category not found" }); });
 app.post("/api/v1/categories", auth, seller, async (req, res) => res.status(201).json(await Category.create(req.body)));

@@ -1,8 +1,8 @@
 import { sendEmail } from "../helpers/nodemailer";
 import { EventName, myEmitter } from "./nodeEvents";
-import { User } from "../database/models/User";
-import { Product } from "../database/models/product";
 import { Notification as DBNotification } from "../database/models/notification";
+import { getUser } from "../clients/userClient";
+import { getProduct } from "../clients/catalogClient";
 import { emitNotification } from "./socket.util";
 import { OrderModelAttributes } from "../types/model";
 import HTML_TEMPLATE from "./mail-template";
@@ -14,8 +14,8 @@ export const myEventListener = () => {
 		EventName.PRODUCT_ADDED_TO_WISHLIST,
 		async (userId: string, productId: string) => {
 			try {
-				const user = await User.findOne({ where: { id: userId } });
-				const product = await Product.findOne({ where: { id: productId } });
+				const user = await getUser(userId);
+				const product = await getProduct(productId);
 
 				if (!user) {
 					console.log("User not found");
@@ -27,7 +27,7 @@ export const myEventListener = () => {
 				}
 
 				const sellerId = product.dataValues.sellerId;
-				const seller = await User.findOne({ where: { id: sellerId } });
+				const seller = await getUser(sellerId);
 
 				const buyerNotification = {
 					userId: user.dataValues.id,
@@ -80,10 +80,10 @@ export const myEventListener = () => {
 		EventName.PRODUCT_REMOVED_FROM_WISHLIST,
 		async (userId: string, productId: string) => {
 			try {
-				const user = await User.findOne({ where: { id: userId } });
-				const product = await Product.findOne({ where: { id: productId } });
+				const user = await getUser(userId);
+				const product = await getProduct(productId);
 				const sellerId = product?.dataValues.sellerId;
-				const seller = await User.findOne({ where: { id: sellerId } });
+				const seller = await getUser(sellerId);
 
 				if (!user) {
 					console.log("User not found");
@@ -169,7 +169,7 @@ export const myEventListener = () => {
 		EventName.PRRODUCT_BOUGHT,
 		async (productId: string, order: OrderModelAttributes) => {
 			try {
-				const productInfo = await Product.findOne({ where: { id: productId } });
+				const productInfo = await getProduct(productId);
 				const sellerId = productInfo?.dataValues.sellerId;
 				const buyerId = order?.buyerId;
 
@@ -178,8 +178,8 @@ export const myEventListener = () => {
 					return;
 				}
 
-				const seller = await User.findOne({ where: { id: sellerId } });
-				const buyer = await User.findOne({ where: { id: buyerId } });
+				const seller = await getUser(sellerId);
+				const buyer = await getUser(buyerId);
 
 				if (!seller || !buyer) {
 					console.log("Seller or buyer not found");
@@ -250,7 +250,7 @@ export const myEventListener = () => {
 			const [buyerNotificationRecord] = await Promise.all([
 				DBNotification.create(notificationInput),
 			]);
-			const buyer = await User.findOne({ where: { id: buyerId } });
+			const buyer = await getUser(buyerId);
 			const emailingData = {
 				to: buyer?.email as string,
 				subject: "Order Delivered",
@@ -283,7 +283,7 @@ export const myEventListener = () => {
 			const [buyerNotificationRecord] = await Promise.all([
 				DBNotification.create(notificationInput),
 			]);
-			const buyer = await User.findOne({ where: { id: buyerId } });
+			const buyer = await getUser(buyerId);
 			const emailingData = {
 				to: buyer?.email as string,
 				subject: "Order Canceled",
@@ -299,7 +299,7 @@ export const myEventListener = () => {
 		async (order: OrderModelAttributes, products: cartItem[]) => {
 			try {
 				const buyerId = order?.buyerId;
-				const buyer = await User.findOne({ where: { id: buyerId } });
+				const buyer = await getUser(buyerId);
 
 				if (!buyer) {
 					console.log("Buyer not found");

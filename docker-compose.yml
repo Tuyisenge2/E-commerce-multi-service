@@ -34,6 +34,7 @@ services:
       - "5433:5432"
     volumes:
       - db:/var/lib/postgres
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/00-schemas.sql:ro
 
   express-server:
     depends_on:
@@ -68,9 +69,11 @@ services:
   # is migrated out of the current express-server.
   user-service:
     build: ./services/user-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: user-service
       PORT: 3001
+      DB_SCHEMA: users
     ports:
       - "3001:3001"
     labels:
@@ -80,9 +83,11 @@ services:
 
   catalog-service:
     build: ./services/catalog-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: catalog-service
       PORT: 3002
+      DB_SCHEMA: catalog
     ports:
       - "3002:3002"
     labels:
@@ -92,9 +97,11 @@ services:
 
   cart-service:
     build: ./services/cart-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: cart-service
       PORT: 3003
+      DB_SCHEMA: cart
     ports:
       - "3003:3003"
     labels:
@@ -104,9 +111,11 @@ services:
 
   order-service:
     build: ./services/order-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: order-service
       PORT: 3004
+      DB_SCHEMA: orders
     ports:
       - "3004:3004"
     labels:
@@ -116,9 +125,15 @@ services:
 
   payment-service:
     build: ./services/payment-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: payment-service
       PORT: 3005
+      DB_SCHEMA: payments
+      USER_SERVICE_URL: http://user-service:3001
+      CART_SERVICE_URL: http://cart-service:3003
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      ORDER_SERVICE_URL: http://order-service:3004
     ports:
       - "3005:3005"
     labels:
@@ -128,9 +143,14 @@ services:
 
   notification-service:
     build: ./services/notification-service
+    env_file: ./.env
     environment:
       SERVICE_NAME: notification-service
       PORT: 3006
+      DB_SCHEMA: notifications
+      USER_SERVICE_URL: http://user-service:3001
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      ORDER_SERVICE_URL: http://order-service:3004
     ports:
       - "3006:3006"
     labels:
