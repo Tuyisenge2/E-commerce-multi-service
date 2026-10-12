@@ -2,12 +2,10 @@
 import { NextFunction, Request, Response } from "express";
 import { productValidation } from "../validations/product.validation";
 import { sendResponse } from "../utils/http.exception";
-import database_models from "../database/config/db.config";
 import { validate } from "uuid";
 import { validateuuid } from "../utils/validateuuid";
 import { ExpandedRequest } from "./auth";
-import { Op } from "sequelize";
-import { isAvailable } from "../utils/nodeEvents";
+import { getProductById } from "../clients/catalogClient";
 const isValidProduct = async (
 	req: Request,
 	res: Response,
@@ -37,17 +35,16 @@ export const isProductExist = async (
 		return sendResponse(res, 400, "BAD REQUEST", "Invalid product id");
 	}
 
-	const product = await database_models.Product.findOne({
-		where: { id: productId },
-	});
-
-	if (!product) {
+	let product;
+	try {
+		product = await getProductById(productId);
+	} catch {
 		return sendResponse(res, 404, "NOT FOUND", "product is not found");
 	}
-	if (!product?.dataValues.isAvailable) {
+	if (!product.isAvailable) {
 		return sendResponse(res, 403, "FORBIDDEN", "product is not available");
 	}
-	if (product.dataValues.quantity < quantity) {
+	if (product.quantity < quantity) {
 		return sendResponse(res, 404, "NOT FOUND", "Not enough quantity in stock");
 	}
 	next();
@@ -71,23 +68,9 @@ const isProductAvailable = (field: string) => {
 	return async (req: ExpandedRequest, res: Response, next: NextFunction) => {
 		try {
 			const productId = req.body[field] || req.params[field];
-			const product = await database_models.Product.findOne({
-				where: {
-					id: productId,
-					isAvailable,
-					expiryDate: {
-						[Op.gt]: new Date(),
-					},
-				},
-				include: [
-					{
-						model: database_models.User,
-						as: "seller",
-					},
-				],
-			});
+			const product = await getProductById(productId);
 
-			if (!product) {
+			if (!product.isAvailable || new Date(product.expiryDate) <= new Date()) {
 				return sendResponse(res, 404, "BAD REQUEST", "product not found!");
 			}
 

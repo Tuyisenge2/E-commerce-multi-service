@@ -5,24 +5,15 @@ import { ProductAttributes } from "../types/model";
 
 import database_models from "../database/config/db.config";
 import { ExpandedRequest } from "../middlewares/auth";
-import { read_function } from "../utils/db_methods";
 import { sendResponse } from "../utils/http.exception";
 import UserUtils from "../utils/users";
+import { getProductById } from "../clients/catalogClient";
 
 const addItemToCart = async (req: ExpandedRequest, res: Response) => {
 	try {
 		const { productId, quantity } = req.body;
 		const userid = UserUtils.getRequestUserId(req);
-		const condition = {
-			where: {
-				id: productId,
-			},
-		};
-		const product = await read_function<ProductAttributes>(
-			"Product",
-			"findOne",
-			condition,
-		);
+		const product = await getProductById(productId);
 
 		const newprice =
 			(product!.price - (product?.price * product?.discount) / 100) * quantity;

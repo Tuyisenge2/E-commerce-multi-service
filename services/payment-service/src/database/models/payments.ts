@@ -3,7 +3,6 @@ import {
 	PaymentsModelAttributes,
 	paymentsCreationAttributes,
 } from "../../types/model";
-import { User } from "./User";
 
 export class Payments extends Model<
 	PaymentsModelAttributes,
@@ -18,12 +17,6 @@ export class Payments extends Model<
 	public status!: string;
 	public phoneNumber!: string;
 
-	public static associate(models: { User: typeof User }) {
-		this.belongsTo(models.User, {
-			foreignKey: "payerId",
-			as: "Payer",
-		});
-	}
 }
 
 const paymemt_model = (sequelize: Sequelize) => {
@@ -38,10 +31,6 @@ const paymemt_model = (sequelize: Sequelize) => {
 			payerId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "users",
-					key: "id",
-				},
 			},
 			paymentMethod: {
 				type: DataTypes.STRING,

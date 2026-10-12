@@ -1,20 +1,35 @@
 import express from "express";
-import orderRoutes from "./routes/orderRoutes";
-import salesRoutes from "./routes/salesRoute";
 import { connectionToDatabase } from "./database/config/db.config";
-import { statisticsRouter } from "./routes/statisticsRoutes";
-import { AdminstatisticsRouter } from "./routes/adminStatsRoute";
 import databaseModels from "./database/config/db.config";
+import auth, { ExpandedRequest } from "./middlewares/auth";
 
 const app = express();
 app.use(express.json());
 app.get("/health", (_request, response) =>
 	response.json({ service: "order-service", status: "ok" }),
 );
-app.use("/api/v1/orders", orderRoutes);
-app.use("/api/v1/sales", salesRoutes);
-app.use("/api/v1/statistics", statisticsRouter);
-app.use("/api/v1/admin-statistics", AdminstatisticsRouter);
+app.get("/api/v1/orders", auth.authenticateUser, async (request: ExpandedRequest, response) =>
+	response.json(await databaseModels.Order.findAll({ where: { buyerId: request.user?.id } })),
+);
+app.get("/api/v1/orders/:id", auth.authenticateUser, async (request: ExpandedRequest, response) => {
+	const order = await databaseModels.Order.findOne({
+		where: { id: request.params.id, buyerId: request.user?.id },
+		include: [{ model: databaseModels.Sales, as: "sales" }],
+	});
+	return order ? response.json(order) : response.status(404).json({ message: "Order not found" });
+});
+app.get("/internal/orders/:id", async (request, response) => {
+	const order = await databaseModels.Order.findByPk(request.params.id, {
+		include: [{ model: databaseModels.Sales, as: "sales" }],
+	});
+	return order ? response.json(order) : response.status(404).json({ message: "Order not found" });
+});
+app.get("/internal/purchases/:buyerId/:productId", async (request, response) => {
+	const sale = await databaseModels.Sales.findOne({
+		where: { buyerId: request.params.buyerId, productId: request.params.productId, status: "delivered" },
+	});
+	return response.json({ purchased: Boolean(sale), sale });
+});
 app.post("/internal/orders/checkout", async (request, response) => {
 	const { userId, products = [] } = request.body as {
 		userId: string;

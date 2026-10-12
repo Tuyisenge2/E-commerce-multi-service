@@ -1,9 +1,7 @@
 import axios from "axios";
 import { Request, Response } from "express";
 import Stripe from "stripe";
-import database_models from "../database/config/db.config";
 import { ExpandedRequest } from "../middlewares/auth";
-import cartService from "../services/carts.services";
 import {
 	getOrCreateStripeCustomer,
 	getPaymentBySession,
@@ -32,9 +30,8 @@ import {
 	MTN_MOMO_TARGET_ENVIRONMENT,
 } from "../utils/keys";
 import { getToken } from "../utils/momoMethods";
-import { findUserById } from "../services/user.services";
 import { getUserById } from "../clients/userClient";
-import { clearCart } from "../clients/cartClient";
+import { clearCart, getCartByUserId } from "../clients/cartClient";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 	apiVersion: "2024-04-10",
@@ -60,6 +57,7 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 				payment_method_types: ["card"],
 				billing_address_collection: "auto",
 				customer: customer.id,
+				metadata: { payerId: user.id },
 				success_url: `${BASE_URL}/payments/success?sessionId={CHECKOUT_SESSION_ID}&payerId=${user.id}`,
 				cancel_url: `${BASE_URL}/api/v1/payments/cancel`,
 			});
@@ -163,20 +161,16 @@ const checkout_success = async (req: Request, res: Response) => {
 		};
 		const session = await stripe.checkout.sessions.retrieve(sessionId);
 		const paymentId = session.payment_intent as string;
-		const cart = (await cartService.findCartByUserIdService(
-			payerId,
-		)) as cartModelAttributes;
-		const user = await findUserById(payerId);
-		if (!user || !user.email) {
-			throw new Error("User email not found");
-		}
+		const verifiedPayerId = session.metadata?.payerId ?? payerId;
+		if (!verifiedPayerId) throw new Error("Payment session has no payer");
+		const cart = (await getCartByUserId(verifiedPayerId)) as cartModelAttributes;
 
 		if (session.payment_status === "paid") {
 			const sessionById: PaymentDetails = await getPaymentBySession(session.id);
 			if (!sessionById) {
 				order = await orderItems(cart);
 				const paymentDetails: PaymentDetails = {
-					payerId,
+					payerId: verifiedPayerId,
 					paymentMethod: "stripe",
 					paymentId,
 					orderId: order.id,

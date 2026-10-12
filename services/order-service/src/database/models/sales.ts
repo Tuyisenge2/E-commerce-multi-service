@@ -4,8 +4,6 @@ import {
 	salesCreationAttributes,
 } from "../../types/model";
 import { Order } from "./order";
-import { User } from "./User";
-import { Product } from "./product";
 export class Sales extends Model<
 	salesModelAttributes,
 	salesCreationAttributes
@@ -18,23 +16,10 @@ export class Sales extends Model<
 	public deliveryDate!: Date;
 	public quantitySold!: number;
 
-	public static associate(models: {
-		User: typeof User;
-		Product: typeof Product;
-		Order: typeof Order;
-	}) {
-		this.belongsTo(models.User, {
-			foreignKey: "buyerId",
-			as: "customer",
-		});
+	public static associate(models: { Order: typeof Order }) {
 		this.belongsTo(models.Order, {
 			foreignKey: "orderId",
 			as: "order",
-		});
-
-		this.belongsTo(models.Product, {
-			foreignKey: "productId",
-			as: "soldProducts",
 		});
 	}
 }
@@ -58,18 +43,10 @@ const sales_model = (sequelize: Sequelize) => {
 			buyerId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "users",
-					key: "id",
-				},
 			},
 			productId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "products",
-					key: "id",
-				},
 			},
 			status: {
 				type: DataTypes.ENUM("pending", "canceled", "delivered"),

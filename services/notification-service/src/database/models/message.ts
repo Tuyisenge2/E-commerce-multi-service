@@ -1,5 +1,4 @@
 import { DataTypes, Model, Sequelize, UUIDV4 } from "sequelize";
-import { User } from "./User";
 import { messageModelAttributes } from "../../types/model";
 
 export class Message extends Model<messageModelAttributes> {
@@ -7,12 +6,6 @@ export class Message extends Model<messageModelAttributes> {
 	public senderId!: string;
 	public message!: string;
 
-	public static associate(models: { User: typeof User }) {
-		this.belongsTo(models.User, {
-			foreignKey: "senderId",
-			as: "sender",
-		});
-	}
 }
 
 const message_model = (sequelize: Sequelize) => {

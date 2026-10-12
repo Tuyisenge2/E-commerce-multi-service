@@ -1,74 +1,44 @@
-version: "3.8"
-
 services:
-  prometheus:
-    image: prom/prometheus:v2.53.0
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
+  # Monitoring and gateway infrastructure are intentionally disabled until
+  # their application integration is completed.
+  # prometheus:
+  #   image: prom/prometheus:v2.53.0
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #   ports:
+  #     - "9090:9090"
 
-  gateway:
-    image: traefik:v3.0
-    command:
-      - --api.dashboard=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+  # gateway:
+  #   image: traefik:v3.0
+  #   command:
+  #     - --api.dashboard=true
+  #     - --providers.docker=true
+  #     - --providers.docker.exposedbydefault=false
+  #     - --entrypoints.web.address=:80
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
 
   postgresdb:
-    image: postgres
+    image: postgres:16
     restart: on-failure
     env_file: ./.env
     environment:
-      - POSTGRES_PASSWORD:$POSTGRES_PASSWORD
-      - DB_DEV_URL=$DB_DEV_URL
-      - DB_TEST_URL=$DB_TEST_URL
-      - PORT=$PORT
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-shoptrove}
     ports:
       - "5433:5432"
     volumes:
-      - db:/var/lib/postgres
+      - postgres16-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/00-schemas.sql:ro
 
-  express-server:
-    depends_on:
-      - postgresdb
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: on-failure
-    env_file: ./.env
-    ports:
-      - $PORT:$PORT
-    environment:
-      - POSTGRES_PASSWORD:$POSTGRES_PASSWORD
-      - DB_DEV_URL=$DB_DEV_URL
-      - DB_TEST_URL=$DB_TEST_URL
-      - PORT=$PORT
-    stdin_open: true
-    tty: true
-
-  react-app:
-    depends_on:
-      - express-server
-    image: kwizera250/shoptrove-react-app
-    restart: on-failure
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - VITE_API_APP_ROOT_URL=${VITE_API_APP_ROOT_URL}
-
-  # Service scaffolding. These are health-check placeholders until domain code
-  # is migrated out of the current express-server.
   user-service:
     build: ./services/user-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: user-service
@@ -83,11 +53,14 @@ services:
 
   catalog-service:
     build: ./services/catalog-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: catalog-service
       PORT: 3002
       DB_SCHEMA: catalog
+      USER_SERVICE_URL: http://user-service:3001
     ports:
       - "3002:3002"
     labels:
@@ -97,11 +70,15 @@ services:
 
   cart-service:
     build: ./services/cart-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: cart-service
       PORT: 3003
       DB_SCHEMA: cart
+      USER_SERVICE_URL: http://user-service:3001
+      CATALOG_SERVICE_URL: http://catalog-service:3002
     ports:
       - "3003:3003"
     labels:
@@ -111,11 +88,14 @@ services:
 
   order-service:
     build: ./services/order-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: order-service
       PORT: 3004
       DB_SCHEMA: orders
+      USER_SERVICE_URL: http://user-service:3001
     ports:
       - "3004:3004"
     labels:
@@ -125,6 +105,8 @@ services:
 
   payment-service:
     build: ./services/payment-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: payment-service
@@ -143,6 +125,8 @@ services:
 
   notification-service:
     build: ./services/notification-service
+    depends_on:
+      - postgresdb
     env_file: ./.env
     environment:
       SERVICE_NAME: notification-service
@@ -159,4 +143,4 @@ services:
       - traefik.http.services.notification-service.loadbalancer.server.port=3006
 
 volumes:
-  db:
+  postgres16-data:

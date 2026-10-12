@@ -79,10 +79,6 @@ const product_model = (sequelize: Sequelize) => {
 			sellerId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "users",
-					key: "id",
-				},
 			},
 			categoryId: {
 				type: DataTypes.UUID,

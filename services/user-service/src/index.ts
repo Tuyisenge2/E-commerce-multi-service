@@ -6,6 +6,8 @@ import profileRouter from "./routes/profileRouter";
 import { roleRoutes } from "./routes/roleRoutes";
 import { connectionToDatabase } from "./database/config/db.config";
 import databaseModels from "./database/config/db.config";
+import jwt from "jsonwebtoken";
+import { ACCESS_TOKEN_SECRET } from "./utils/keys";
 
 const app = express();
 app.use(express.json());
@@ -33,6 +35,20 @@ app.get("/internal/users/:id", async (request, response) => {
 	delete data.password;
 	delete data.confirmPassword;
 	return response.json(data);
+});
+app.post("/internal/auth/validate", async (request, response) => {
+	const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+	if (!token) return response.status(401).json({ message: "Token is required" });
+	try {
+		const blacklisted = await databaseModels.Blacklist.findOne({ where: { token } });
+		if (blacklisted) {
+			return response.status(401).json({ message: "Token has been revoked" });
+		}
+		const user = jwt.verify(token, ACCESS_TOKEN_SECRET as string);
+		return response.json({ user });
+	} catch {
+		return response.status(401).json({ message: "Invalid or expired token" });
+	}
 });
 
 connectionToDatabase()

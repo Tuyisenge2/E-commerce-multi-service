@@ -1,8 +1,5 @@
 import { DataTypes, Model, Sequelize, UUIDV4 } from "sequelize";
 import { UserCreationAttributes, UserModelAttributes } from "../../types/model";
-import { Product } from "./product";
-import database_models from "../config/db.config";
-import { Payments } from "./payments";
 
 const default_date = new Date(Date.now());
 
@@ -31,29 +28,6 @@ export class User extends Model<UserModelAttributes, UserCreationAttributes> {
 	public city!: string;
 	public zipCode!: number;
 
-	public static associate(models: {
-		Product: typeof Product;
-		role: typeof database_models.role;
-		Payments: typeof Payments;
-		review: typeof database_models.review;
-		Notification: typeof database_models.Notification;
-	}) {
-		this.hasOne(models.Product, {
-			foreignKey: "sellerId",
-			as: "products",
-		});
-		User.belongsTo(models.role, { as: "Roles", foreignKey: "role" });
-		this.hasMany(models.Payments, {
-			foreignKey: "payerId",
-			as: "payments",
-		});
-		this.hasMany(models.review, { as: "user", foreignKey: "userId" });
-
-		this.hasMany(models.Notification, {
-			foreignKey: "userId",
-			as: "notifications",
-		});
-	}
 }
 
 const user_model = (sequelize: Sequelize) => {

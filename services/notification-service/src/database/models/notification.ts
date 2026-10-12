@@ -1,5 +1,4 @@
 import { DataTypes, Model, Sequelize, UUIDV4 } from "sequelize";
-import { User } from "./User";
 import { NotificationAttributes } from "../../types/model";
 
 export class Notification extends Model<NotificationAttributes> {
@@ -8,12 +7,6 @@ export class Notification extends Model<NotificationAttributes> {
 	public unread!: boolean;
 	public userId!: string;
 
-	public static associate(models: { User: typeof User }) {
-		this.belongsTo(models.User, {
-			foreignKey: "userId",
-			as: "users",
-		});
-	}
 }
 
 const notification_model = (sequelize: Sequelize) => {
@@ -37,10 +30,6 @@ const notification_model = (sequelize: Sequelize) => {
 			userId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "users",
-					key: "id",
-				},
 			},
 		},
 

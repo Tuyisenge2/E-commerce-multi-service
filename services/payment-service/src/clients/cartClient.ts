@@ -18,3 +18,12 @@ export const clearCart = async (token: string) => {
 		{ headers: { Authorization: `Bearer ${token}` } },
 	);
 };
+
+export const getCartByUserId = async (userId: string) => {
+	const response = await client.get(`/internal/carts/${userId}`);
+	return response.data;
+};
+
+export const clearCartById = async (cartId: string) => {
+	await client.delete(`/internal/carts/${cartId}`);
+};

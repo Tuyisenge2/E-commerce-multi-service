@@ -37,10 +37,6 @@ const wish_model = (sequelize: Sequelize) => {
 			userId: {
 				type: DataTypes.UUID,
 				allowNull: false,
-				references: {
-					model: "users",
-					key: "id",
-				},
 			},
 			productId: {
 				type: DataTypes.UUID,

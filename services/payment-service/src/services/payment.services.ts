@@ -1,28 +1,19 @@
 import { stripe } from "../controllers/paymentController";
-import database_models from "../database/config/db.config";
-import { Product } from "../database/models/product";
-import { Sales } from "../database/models/sales";
 import { cartItem } from "../types/cart";
 import {
-	OrderCreationAttributes,
-	OrderModelAttributes,
 	PaymentsModelAttributes,
 	UserModelAttributes,
 	cartModelAttributes,
-	salesModelAttributes,
 } from "../types/model";
 import { PaymentDetails } from "../types/payment";
 import { insert_function, read_function } from "../utils/db_methods";
-import { EventName, myEmitter } from "../utils/nodeEvents";
 import { v4 as uuidv4 } from "uuid";
-import { getCart } from "../clients/cartClient";
-import { createOrder } from "../clients/orderClient";
+import { getCart, getCartByUserId, clearCartById } from "../clients/cartClient";
+import { createOrder, getOrderById } from "../clients/orderClient";
 
 export const findUserCartById = async (userId: string, token?: string) => {
 	if (token) return (await getCart(token)) as cartModelAttributes;
-	return await read_function<cartModelAttributes>("Cart", "findOne", {
-		where: { userId },
-	});
+	return (await getCartByUserId(userId)) as cartModelAttributes;
 };
 
 export const getOrCreateStripeCustomer = async (user: UserModelAttributes) => {
@@ -91,68 +82,16 @@ export const recordPaymentDetails = async (paymentDetails: PaymentDetails) => {
 	return paymantDetails;
 };
 export const readOrderById = async (orderId: string) => {
-	return await read_function<OrderCreationAttributes>("Order", "findOne", {
-		where: { id: orderId },
-	});
+	return await getOrderById(orderId);
 };
 
 export const orderItems = async (cart: cartModelAttributes, token?: string) => {
-	if (token) {
-		return await createOrder(
-			{
-				userId: cart.userId,
-				products: cart.products.map((product) => ({
-					id: product.id,
-					quantity: product.quantity,
-				})),
-			},
-			token,
-		);
-	}
-	const order = await insert_function<OrderModelAttributes>("Order", "create", {
-		buyerId: cart.userId,
-	});
-	const products = cart.products;
-	const currentDate = new Date(Date.now());
-	const deliveryDate = new Date(currentDate.setDate(currentDate.getDate() + 2));
-
-	for (const product of products) {
-		const sale_data = {
-			orderId: order.id,
-			buyerId: cart.userId,
-			productId: product.id,
-			deliveryDate,
-			quantitySold: product.quantity,
-		};
-		await insert_function<salesModelAttributes>("Sales", "create", sale_data);
-		myEmitter.emit(EventName.PRRODUCT_BOUGHT, product.id, order);
-	}
-
-	// Emit ORDERS_COMPLETED event only once per order
-	myEmitter.emit(EventName.ORDERS_COMPLETED, order, cart.products);
-
-	await database_models.Cart.update(
-		{ products: [], total: 0 },
-		{ where: { id: cart.id } },
-	);
-
-	return await read_function<OrderModelAttributes>("Order", "findOne", {
-		where: { id: order.id },
-		include: [
-			{
-				model: Sales,
-				as: "sales",
-				attributes: ["orderId", "status", "deliveryDate", "quantitySold"],
-				include: [
-					{
-						model: Product,
-						as: "soldProducts",
-						attributes: ["name", "price", "images", "isAvailable", "discount"],
-					},
-				],
-			},
-		],
-	});
+	const order = await createOrder({
+		userId: cart.userId,
+		products: cart.products.map((product) => ({ id: product.id, quantity: product.quantity })),
+	}, token);
+	await clearCartById(cart.id);
+	return order;
 };
 export function generateUUID() {
 	const uuid = uuidv4();

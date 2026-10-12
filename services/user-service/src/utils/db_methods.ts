@@ -1,6 +1,7 @@
 /* eslint-disable no-shadow */
 import { CreateOptions, FindOptions, UpdateOptions } from "sequelize";
 import database_models from "../database/config/db.config";
+const models = database_models as Record<string, any>;
 
 type ModelTypes =
 	| "Product"
@@ -26,13 +27,13 @@ export const read_function = async <T>(
 	method: MethodTypes,
 	condition?: FindOptions,
 ) => {
-	if (!database_models[model] || !database_models[model][method]) {
+	if (!models[model] || !models[model][method]) {
 		throw new Error(
-			`Invalid ${!database_models[model] ? "modelName" : ""} ${!database_models[model] && !database_models[model][method] ? "and" : ""} ${!database_models[model][method] ? "method" : ""}`,
+			`Invalid ${!models[model] ? "modelName" : ""} ${!models[model] && !models[model]?.[method] ? "and" : ""} ${!models[model]?.[method] ? "method" : ""}`,
 		);
 	}
 	const result = await (
-		database_models[model][method] as (condition: FindOptions) => Promise<T>
+		models[model][method] as (condition: FindOptions) => Promise<T>
 	)(condition as FindOptions);
 	return result;
 };
@@ -43,15 +44,15 @@ export const insert_function = async <T>(
 	data: any,
 	condition?: FindOptions | UpdateOptions,
 ): Promise<T> => {
-	if (!database_models[model] || !database_models[model][method]) {
+	if (!models[model] || !models[model][method]) {
 		throw new Error(
-			`Invalid ${!database_models[model] ? "modelName" : ""} ${!database_models[model] && !database_models[model][method] ? "and" : ""} ${!database_models[model][method] ? "method" : ""}`,
+			`Invalid ${!models[model] ? "modelName" : ""} ${!models[model] && !models[model]?.[method] ? "and" : ""} ${!models[model]?.[method] ? "method" : ""}`,
 		);
 	}
 
 	if (method === "create") {
 		const result = await (
-			database_models[model][method] as (
+			models[model][method] as (
 				data: any,
 				options?: CreateOptions,
 			) => Promise<T>
@@ -62,7 +63,7 @@ export const insert_function = async <T>(
 			throw new Error("Condition is required for update operation");
 		}
 		const result = await (
-			database_models[model][method] as (
+			models[model][method] as (
 				values: any,
 				options?: UpdateOptions,
 			) => Promise<T>

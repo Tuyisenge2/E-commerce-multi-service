@@ -2,6 +2,7 @@
 	"name": "@shoptrove/notification-service",
 	"private": true,
 	"version": "0.1.0",
+	"packageManager": "pnpm@9.15.4",
 	"scripts": {
 		"dev": "ts-node-dev --require dotenv/config src/index.ts",
 		"build": "tsc",
