@@ -11,6 +11,7 @@ import {
 	GOOGLE_CLIENT_ID,
 	GOOGLE_SECRET_ID,
 } from "../utils/keys";
+import { env } from "../utils/keys";
 import { hashPassword } from "../utils/password";
 import { isValidPassword } from "../utils/password.checks";
 
@@ -59,7 +60,7 @@ passport.use(
 					lastName: req.body.lastName,
 					role: role?.dataValues.id as string,
 					isActive: true,
-					isVerified: false,
+					isVerified: !env.emailEnabled,
 					gender: req.body.gender || " ",
 					birthDate: req.body.birthDate || "01.01.1900",
 					phoneNumber: req.body.phoneNumber || "+250",
@@ -143,28 +144,6 @@ interface GoogleProfileData {
 	};
 	emails: Array<{ value: string }>;
 }
-
-passport.use(
-	"google",
-	new GoogleStrategy(
-		{
-			clientID: GOOGLE_CLIENT_ID,
-			clientSecret: GOOGLE_SECRET_ID,
-			callbackURL: GOOGLE_CALLBACK_URL,
-			scope: ["profile", "email"],
-			passReqToCallback: true,
-		},
-		(
-			_req: Request,
-			_accessToken: string,
-			_refreshToken: string,
-			profile: any,
-			cb: VerifyCallback,
-		) => {
-			cb(null, userProfile(profile));
-		},
-	),
-);
 
 const userProfile = async (
 	profile: GoogleProfileData,

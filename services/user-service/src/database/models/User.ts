@@ -4,29 +4,29 @@ import { UserCreationAttributes, UserModelAttributes } from "../../types/model";
 const default_date = new Date(Date.now());
 
 export class User extends Model<UserModelAttributes, UserCreationAttributes> {
-	public id!: string;
-	public userName!: string;
-	public firstName!: string;
-	public lastName!: string;
-	public email!: string;
-	public password!: string;
-	public confirmPassword!: string;
-	public role!: string;
-	public isVerified!: boolean;
-	public isPasswordExpired!: boolean;
-	public lastTimePasswordUpdated!: Date;
-	public isActive!: boolean;
-	public gender!: string;
-	public birthDate!: Date;
-	public phoneNumber!: string;
-	public preferredLanguage!: string;
-	public preferredCurrency!: string;
-	public profileImage!: string;
-	public addressLine1!: string;
-	public addressLine2!: string;
-	public country!: string;
-	public city!: string;
-	public zipCode!: number;
+	declare id: string;
+	declare userName: string;
+	declare firstName: string;
+	declare lastName: string;
+	declare email: string;
+	declare password: string;
+	declare confirmPassword: string;
+	declare role: string;
+	declare isVerified: boolean;
+	declare isPasswordExpired: boolean;
+	declare lastTimePasswordUpdated: Date;
+	declare isActive: boolean;
+	declare gender: string;
+	declare birthDate: Date;
+	declare phoneNumber: string;
+	declare preferredLanguage: string;
+	declare preferredCurrency: string;
+	declare profileImage: string;
+	declare addressLine1: string;
+	declare addressLine2: string;
+	declare country: string;
+	declare city: string;
+	declare zipCode: number;
 
 }
 

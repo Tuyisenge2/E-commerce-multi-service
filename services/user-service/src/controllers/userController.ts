@@ -21,7 +21,7 @@ import { InfoAttribute } from "../types/passport";
 import { insert_function, read_function } from "../utils/db_methods";
 import { handleNewUser, handleUserLogin } from "../utils/google.auth";
 import { HttpException, sendResponse } from "../utils/http.exception";
-import { ACCESS_TOKEN_SECRET, BASE_URL } from "../utils/keys";
+import { ACCESS_TOKEN_SECRET, BASE_URL, env } from "../utils/keys";
 import HTML_TEMPLATE from "../utils/mail-template";
 import { validateToken } from "../utils/token.validation";
 import { Op } from "sequelize";
@@ -36,14 +36,23 @@ const registerUser = async (
 			passport.authenticate(
 				"signup",
 				(err: Error, user: UserModelAttributes, info: InfoAttribute) => {
+					if (err) {
+						return sendResponse(
+							res,
+							500,
+							"SERVER ERROR",
+							"Registration failed",
+						);
+					}
 					if (info) {
 						return sendResponse(res, 409, "CONFLICT", info.message);
 					}
 					req.login(user, async () => {
-						const token = generateAccessToken({ id: user.id, role: user.role });
-						await insert_function<TokenModelAttributes>("Token", "create", {
-							token,
-						});
+						try {
+							const token = generateAccessToken({ id: user.id, role: user.role });
+							await insert_function<TokenModelAttributes>("Token", "create", {
+								token,
+							});
 						const message = `
 
 						<div style="max-width: 600px;
@@ -67,17 +76,27 @@ const registerUser = async (
         <p>The ShopTrove Team</p>
     </div>
 						`;
-						await sendEmail({
-							to: user.email,
-							subject: "Verify Email",
-							html: HTML_TEMPLATE(message, "Account verification"),
-						});
-						return sendResponse(
-							res,
-							201,
-							"SUCCESS",
-							"Account Created successfully, Please Verify your Account",
-						);
+							await sendEmail({
+								to: user.email,
+								subject: "Verify Email",
+								html: HTML_TEMPLATE(message, "Account verification"),
+							});
+							return sendResponse(
+								res,
+								201,
+								"SUCCESS",
+								env.emailEnabled
+									? "Account Created successfully, Please Verify your Account"
+									: "Account created successfully",
+							);
+						} catch (error) {
+							return sendResponse(
+								res,
+								500,
+								"SERVER ERROR",
+								"Registration could not be completed",
+							);
+						}
 					});
 				},
 			)(req, res, next);

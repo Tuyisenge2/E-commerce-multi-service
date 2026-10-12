@@ -1,5 +1,8 @@
 import express from "express";
-import { connectionToDatabase } from "./database/config/db.config";
+import {
+	connectionToDatabase,
+	sequelizeConnection,
+} from "./database/config/db.config";
 import databaseModels from "./database/config/db.config";
 import auth, { ExpandedRequest } from "./middlewares/auth";
 
@@ -40,22 +43,33 @@ app.post("/internal/orders/checkout", async (request, response) => {
 			.status(400)
 			.json({ message: "userId and products are required" });
 	}
-	const order = await databaseModels.Order.create({
-		buyerId: userId,
-		status: "pending",
-	});
-	const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-	for (const product of products) {
-		await databaseModels.Sales.create({
-			orderId: order.id,
-			buyerId: userId,
-			productId: product.id,
-			quantitySold: product.quantity,
-			deliveryDate,
-			status: "pending",
+	try {
+		const order = await sequelizeConnection.transaction(async (transaction) => {
+			const createdOrder = await databaseModels.Order.create(
+				{ buyerId: userId, status: "pending" },
+				{ transaction },
+			);
+			const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+			for (const product of products) {
+				await databaseModels.Sales.create(
+					{
+						orderId: createdOrder.id,
+						buyerId: userId,
+						productId: product.id,
+						quantitySold: product.quantity,
+						deliveryDate,
+						status: "pending",
+					},
+					{ transaction },
+				);
+			}
+			return createdOrder;
 		});
+		return response.status(201).json(order);
+	} catch (error) {
+		console.error("Unable to create checkout order", error);
+		return response.status(500).json({ message: "Unable to create order" });
 	}
-	return response.status(201).json(order);
 });
 
 connectionToDatabase()

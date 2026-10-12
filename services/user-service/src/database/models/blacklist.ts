@@ -2,8 +2,8 @@ import { DataTypes, Model, Sequelize } from "sequelize";
 import { BlacklistModelAtributes } from "../../types/model";
 
 export class Blacklist extends Model<BlacklistModelAtributes> {
-	public id!: string;
-	public token!: string;
+	declare id: string;
+	declare token: string;
 }
 
 const blacklist_model = (sequelize: Sequelize) => {

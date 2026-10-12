@@ -8,13 +8,13 @@ export class Sales extends Model<
 	salesModelAttributes,
 	salesCreationAttributes
 > {
-	public id!: string;
-	public orderId!: string;
-	public buyerId!: string;
-	public productId!: string;
-	public status!: string;
-	public deliveryDate!: Date;
-	public quantitySold!: number;
+	declare id: string;
+	declare orderId: string;
+	declare buyerId: string;
+	declare productId: string;
+	declare status: string;
+	declare deliveryDate: Date;
+	declare quantitySold: number;
 
 	public static associate(models: { Order: typeof Order }) {
 		this.belongsTo(models.Order, {

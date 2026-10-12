@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { EMAIL, PASSWORD, SENDER_NAME } from "../utils/keys";
+import { EMAIL, PASSWORD, SENDER_NAME, env } from "../utils/keys";
 import { Attachment } from "nodemailer/lib/mailer";
 
 export interface MailOptions {
@@ -26,6 +26,10 @@ export async function sendEmail({
 	html,
 	attachments,
 }: MailOptions) {
+	if (!env.emailEnabled) {
+		console.info(`Email delivery disabled; skipped message to ${to}`);
+		return { skipped: true };
+	}
 	const mailOptions: nodemailer.SendMailOptions = {
 		from: `"${SENDER_NAME}" <${EMAIL}>`,
 		to,

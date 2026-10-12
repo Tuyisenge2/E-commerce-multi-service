@@ -1,3 +1,6 @@
+import { env } from "../config/env";
+
+export { env };
 export const PORT = process.env.PORT;
 export const SESSION_SECRET = process.env.SESSION_SECRET as string;
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;

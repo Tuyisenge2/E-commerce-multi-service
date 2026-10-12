@@ -8,8 +8,8 @@ export class Token extends Model<
 	TokenModelAttributes,
 	TokenCreationAttributes
 > {
-	public id!: string;
-	public token!: string;
+	declare id: string;
+	declare token: string;
 }
 const token_model = (sequelize: Sequelize) => {
 	Token.init(

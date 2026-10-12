@@ -9,9 +9,9 @@ export class Order extends Model<
 	OrderModelAttributes,
 	OrderCreationAttributes
 > {
-	public id!: string;
-	public buyerId!: string;
-	public status!: string;
+	declare id: string;
+	declare buyerId: string;
+	declare status: string;
 
 	public static associate(models: { Sales: typeof Sales }) {
 		this.hasMany(models.Sales, {
