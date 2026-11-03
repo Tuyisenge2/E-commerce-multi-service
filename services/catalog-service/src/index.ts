@@ -1,7 +1,11 @@
+import { asyncHandler, requestErrorHandler } from "./requestErrors";
 import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { JwtPayload } from "jsonwebtoken";
 import { DataTypes, Model, Op, Sequelize } from "sequelize";
 import { validateAccessToken } from "./clients/userClient";
+import { corsOptions } from "./config/cors";
+import { parseProductUpload, prepareProductImages } from "./productUpload";
 
 const db = new Sequelize(process.env.DB_DEV_URL ?? "", {
 	dialect: "postgres",
@@ -117,136 +121,219 @@ const buyer = (req: AuthRequest, res: Response, next: NextFunction) =>
 		? next()
 		: res.status(403).json({ message: "Buyer access required" });
 const app = express();
+app.use(cors(corsOptions));
 app.use(express.json());
-app.get("/health", (_req, res) =>
-	res.json({ service: "catalog-service", status: "ok" }),
+app.get(
+	"/health",
+	asyncHandler((_req, res) =>
+		res.json({ service: "catalog-service", status: "ok" }),
+	),
 );
-app.get("/internal/products/:id", async (req, res) => {
-	const item = await Product.findByPk(req.params.id);
-	return item
-		? res.json(item)
-		: res.status(404).json({ message: "Product not found" });
-});
-app.get("/api/v1/categories", async (_req, res) =>
-	res.json(await Category.findAll()),
+app.get(
+	"/internal/products/:id",
+	asyncHandler(async (req, res) => {
+		const item = await Product.findByPk(req.params.id);
+		return item
+			? res.json(item)
+			: res.status(404).json({ message: "Product not found" });
+	}),
 );
-app.get("/api/v1/categories/:id", async (req, res) => {
-	const item = await Category.findByPk(req.params.id);
-	return item
-		? res.json(item)
-		: res.status(404).json({ message: "Category not found" });
-});
-app.post("/api/v1/categories", auth, seller, async (req, res) =>
-	res.status(201).json(await Category.create(req.body)),
+app.get(
+	"/api/v1/categories",
+	asyncHandler(async (_req, res) => res.json(await Category.findAll())),
 );
-app.patch("/api/v1/categories/:id", auth, seller, async (req, res) => {
-	const item = await Category.findByPk(req.params.id);
-	if (!item) return res.status(404).json({ message: "Category not found" });
-	await item.update(req.body);
-	return res.json(item);
-});
-app.get("/api/v1/products/search", async (req, res) => {
-	const q = String(req.query.q ?? "");
-	return res.json(
-		await Product.findAll({ where: { name: { [Op.iLike]: `%${q}%` } } }),
-	);
-});
-app.get("/api/v1/products/guest-products", async (_req, res) =>
-	res.json(await Product.findAll({ where: { isAvailable: true } })),
+app.get(
+	"/api/v1/categories/:id",
+	asyncHandler(async (req, res) => {
+		const item = await Category.findByPk(req.params.id);
+		return item
+			? res.json(item)
+			: res.status(404).json({ message: "Category not found" });
+	}),
 );
-app.get("/api/v1/products", auth, async (_req, res) =>
-	res.json(await Product.findAll()),
+app.post(
+	"/api/v1/categories",
+	asyncHandler(auth),
+	asyncHandler(seller),
+	asyncHandler(async (req, res) =>
+		res.status(201).json(await Category.create(req.body)),
+	),
 );
-app.get("/api/v1/products/:id", async (req, res) => {
-	const item = await Product.findByPk(req.params.id);
-	return item
-		? res.json(item)
-		: res.status(404).json({ message: "Product not found" });
-});
-app.get("/api/v1/products/:id/reviews", async (req, res) =>
-	res.json(await Review.findAll({ where: { productId: req.params.id } })),
+app.patch(
+	"/api/v1/categories/:id",
+	asyncHandler(auth),
+	asyncHandler(seller),
+	asyncHandler(async (req, res) => {
+		const item = await Category.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: "Category not found" });
+		await item.update(req.body);
+		return res.json(item);
+	}),
 );
-app.post("/api/v1/products", auth, seller, async (req: AuthRequest, res) =>
-	res
-		.status(201)
-		.json(await Product.create({ ...req.body, sellerId: req.user?.id })),
+app.get(
+	"/api/v1/products/search",
+	asyncHandler(async (req, res) => {
+		const q = String(req.query.q ?? "");
+		return res.json(
+			await Product.findAll({ where: { name: { [Op.iLike]: `%${q}%` } } }),
+		);
+	}),
 );
-app.patch("/api/v1/products/:id", auth, seller, async (req, res) => {
-	const item = await Product.findByPk(req.params.id);
-	if (!item) return res.status(404).json({ message: "Product not found" });
-	await item.update(req.body);
-	return res.json(item);
-});
+app.get(
+	"/api/v1/products/guest-products",
+	asyncHandler(async (_req, res) =>
+		res.json(await Product.findAll({ where: { isAvailable: true } })),
+	),
+);
+app.get(
+	"/api/v1/products",
+	asyncHandler(auth),
+	asyncHandler(async (_req, res) => res.json(await Product.findAll())),
+);
+app.get(
+	"/api/v1/products/:id",
+	asyncHandler(async (req, res) => {
+		const item = await Product.findByPk(req.params.id);
+		return item
+			? res.json(item)
+			: res.status(404).json({ message: "Product not found" });
+	}),
+);
+app.get(
+	"/api/v1/products/:id/reviews",
+	asyncHandler(async (req, res) =>
+		res.json(await Review.findAll({ where: { productId: req.params.id } })),
+	),
+);
+app.post(
+	"/api/v1/products",
+	asyncHandler(auth),
+	asyncHandler(seller),
+	parseProductUpload,
+	prepareProductImages(),
+	asyncHandler(async (req: AuthRequest, res) =>
+		res
+			.status(201)
+			.json(await Product.create({ ...req.body, sellerId: req.user?.id })),
+	),
+);
+app.patch(
+	"/api/v1/products/:id",
+	asyncHandler(auth),
+	asyncHandler(seller),
+	parseProductUpload,
+	prepareProductImages(true),
+	asyncHandler(async (req, res) => {
+		const item = await Product.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: "Product not found" });
+		await item.update(req.body);
+		return res.json(item);
+	}),
+);
 app.patch(
 	"/api/v1/products/:id/availability-status",
-	auth,
-	seller,
-	async (req, res) => {
+	asyncHandler(auth),
+	asyncHandler(seller),
+	asyncHandler(async (req, res) => {
 		const item = await Product.findByPk(req.params.id);
 		if (!item) return res.status(404).json({ message: "Product not found" });
 		await item.update({ isAvailable: !item.isAvailable });
 		return res.json(item);
-	},
+	}),
 );
-app.post("/api/v1/products/recommended", auth, async (req, res) => {
-	const item = await Product.findByPk(req.body.id);
-	if (!item) return res.status(404).json({ message: "Product not found" });
-	return res.json(
-		await Product.findAll({
-			where: {
-				categoryId: item.categoryId,
-				isAvailable: true,
-				id: { [Op.ne]: item.id },
-			},
-			limit: 5,
-			order: [["createdAt", "DESC"]],
-		}),
-	);
-});
-app.delete("/api/v1/products/:id", auth, seller, async (req, res) => {
-	const item = await Product.findByPk(req.params.id);
-	if (!item) return res.status(404).json({ message: "Product not found" });
-	await item.destroy();
-	return res.json({ message: "Product deleted" });
-});
-app.get("/api/v1/reviews", async (_req, res) =>
-	res.json(await Review.findAll()),
+app.post(
+	"/api/v1/products/recommended",
+	asyncHandler(auth),
+	asyncHandler(async (req, res) => {
+		const item = await Product.findByPk(req.body.id);
+		if (!item) return res.status(404).json({ message: "Product not found" });
+		return res.json(
+			await Product.findAll({
+				where: {
+					categoryId: item.categoryId,
+					isAvailable: true,
+					id: { [Op.ne]: item.id },
+				},
+				limit: 5,
+				order: [["createdAt", "DESC"]],
+			}),
+		);
+	}),
 );
-app.post("/api/v1/reviews", auth, buyer, async (req: AuthRequest, res) =>
-	res
-		.status(201)
-		.json(await Review.create({ ...req.body, userId: req.user?.id })),
+app.delete(
+	"/api/v1/products/:id",
+	asyncHandler(auth),
+	asyncHandler(seller),
+	asyncHandler(async (req, res) => {
+		const item = await Product.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: "Product not found" });
+		await item.destroy();
+		return res.json({ message: "Product deleted" });
+	}),
 );
-app.patch("/api/v1/reviews/:id", auth, async (req, res) => {
-	const item = await Review.findByPk(req.params.id);
-	if (!item) return res.status(404).json({ message: "Review not found" });
-	await item.update(req.body);
-	return res.json(item);
-});
-app.delete("/api/v1/reviews/:id", auth, async (req, res) => {
-	const item = await Review.findByPk(req.params.id);
-	if (!item) return res.status(404).json({ message: "Review not found" });
-	await item.destroy();
-	return res.json({ message: "Review deleted" });
-});
-app.post("/api/v1/wishes", auth, buyer, async (req: AuthRequest, res) => {
-	const existing = await Wish.findOne({
-		where: { productId: req.body.productId, userId: req.user?.id },
-	});
-	if (existing) {
-		await existing.destroy();
-		return res.json({ message: "Product removed from wishlist" });
-	}
-	return res.status(201).json(
-		await Wish.create({
-			productId: req.body.productId,
-			userId: req.user?.id,
-		}),
-	);
-});
-app.get("/api/v1/wishes", auth, async (req: AuthRequest, res) =>
-	res.json(await Wish.findAll({ where: { userId: req.user?.id } })),
+app.get(
+	"/api/v1/reviews",
+	asyncHandler(async (_req, res) => res.json(await Review.findAll())),
 );
+app.post(
+	"/api/v1/reviews",
+	asyncHandler(auth),
+	asyncHandler(buyer),
+	asyncHandler(async (req: AuthRequest, res) =>
+		res
+			.status(201)
+			.json(await Review.create({ ...req.body, userId: req.user?.id })),
+	),
+);
+app.patch(
+	"/api/v1/reviews/:id",
+	asyncHandler(auth),
+	asyncHandler(async (req, res) => {
+		const item = await Review.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: "Review not found" });
+		await item.update(req.body);
+		return res.json(item);
+	}),
+);
+app.delete(
+	"/api/v1/reviews/:id",
+	asyncHandler(auth),
+	asyncHandler(async (req, res) => {
+		const item = await Review.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: "Review not found" });
+		await item.destroy();
+		return res.json({ message: "Review deleted" });
+	}),
+);
+app.post(
+	"/api/v1/wishes",
+	asyncHandler(auth),
+	asyncHandler(buyer),
+	asyncHandler(async (req: AuthRequest, res) => {
+		const existing = await Wish.findOne({
+			where: { productId: req.body.productId, userId: req.user?.id },
+		});
+		if (existing) {
+			await existing.destroy();
+			return res.json({ message: "Product removed from wishlist" });
+		}
+		return res.status(201).json(
+			await Wish.create({
+				productId: req.body.productId,
+				userId: req.user?.id,
+			}),
+		);
+	}),
+);
+app.get(
+	"/api/v1/wishes",
+	asyncHandler(auth),
+	asyncHandler(async (req: AuthRequest, res) =>
+		res.json(await Wish.findAll({ where: { userId: req.user?.id } })),
+	),
+);
+app.use(requestErrorHandler);
+
 db.authenticate()
 	.then(() =>
 		app.listen(Number(process.env.PORT ?? 3002), () =>

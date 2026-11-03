@@ -48,6 +48,8 @@ if ((value("SESSION_SECRET")?.length ?? 0) < 32) {
 }
 
 export const env = {
+	sellerEmailOtpBypassed:
+		mode === "development" && enabled("BYPASS_SELLER_EMAIL_OTP"),
 	emailEnabled: enabled("ENABLE_EMAIL"),
 	cloudinaryEnabled: enabled("ENABLE_CLOUDINARY"),
 };

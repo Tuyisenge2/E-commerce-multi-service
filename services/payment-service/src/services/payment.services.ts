@@ -44,7 +44,7 @@ export const getOrCreateStripeCustomer = async (user: UserModelAttributes) => {
 };
 
 export const lineCartItems = (cart: cartModelAttributes) => {
-	const line_items = [];
+	const line_items: import("stripe").Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 	const products: cartItem[] = cart.products;
 	for (const product of products) {
 		const line_item_obj = {

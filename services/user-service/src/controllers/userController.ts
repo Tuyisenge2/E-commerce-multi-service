@@ -49,11 +49,14 @@ const registerUser = async (
 					}
 					req.login(user, async () => {
 						try {
-							const token = generateAccessToken({ id: user.id, role: user.role });
+							const token = generateAccessToken({
+								id: user.id,
+								role: user.role,
+							});
 							await insert_function<TokenModelAttributes>("Token", "create", {
 								token,
 							});
-						const message = `
+							const message = `
 
 						<div style="max-width: 600px;
     margin: 0 auto;
@@ -125,30 +128,31 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 			}
 
 			(req as any).login(user, async (err: Error) => {
-				if (err) {
-					return sendResponse(res, 400, "BAD REQUEST", "Bad Request!");
-				}
-
-				const { id, email, firstName, lastName, isPasswordExpired } = user;
-				const role = (user as UserModelInclude).Roles?.roleName;
-
-				let authenticationtoken: string;
-				let tokenData: TokenData;
-
-				if (role === "SELLER") {
-					const otp = randomatic("0", 6);
-
-					if (isPasswordExpired) {
-						tokenData = { id, role, otp, isPasswordExpired };
-					} else {
-						tokenData = { id, role, otp };
+				try {
+					if (err) {
+						return sendResponse(res, 400, "BAD REQUEST", "Bad Request!");
 					}
-					authenticationtoken = generateAccessToken(tokenData);
 
-					const host = `${BASE_URL}/users`;
-					const authenticationlink = `${host}/2fa?token=${authenticationtoken}`;
+					const { id, email, firstName, lastName, isPasswordExpired } = user;
+					const role = (user as UserModelInclude).Roles?.roleName;
 
-					const message = `Hello ${firstName + " " + lastName},<br><br>
+					let authenticationtoken: string;
+					let tokenData: TokenData;
+
+					if (role === "SELLER" && !env.sellerEmailOtpBypassed) {
+						const otp = randomatic("0", 6);
+
+						if (isPasswordExpired) {
+							tokenData = { id, role, otp, isPasswordExpired };
+						} else {
+							tokenData = { id, role, otp };
+						}
+						authenticationtoken = generateAccessToken(tokenData);
+
+						const host = `${BASE_URL}/users`;
+						const authenticationlink = `${host}/2fa?token=${authenticationtoken}`;
+
+						const message = `Hello ${firstName + " " + lastName},<br><br>
 
         You recently requested to log in to ShopTrove E-Commerce app. To complete the login process,Please enter the following verification code <br><br> OTP:${otp} <br><br> You can also use the following link along with the provided OTP to complete your login:<br><br> <a href ='${authenticationlink}' style="
       background-color: MediumSeaGreen;
@@ -162,36 +166,39 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         Thank you,<br><br>
         The ShopTrove E-Commerce app Team`;
 
-					const options = {
-						to: email,
-						subject: "Your Login Verification Code",
-						html: HTML_TEMPLATE(message, "Account verification"),
-					};
-					await insert_function<TokenModelAttributes>("Token", "create", {
-						token: authenticationtoken,
-					});
+						const options = {
+							to: email,
+							subject: "Your Login Verification Code",
+							html: HTML_TEMPLATE(message, "Account verification"),
+						};
+						await insert_function<TokenModelAttributes>("Token", "create", {
+							token: authenticationtoken,
+						});
 
-					sendEmail(options);
-					return sendResponse(
-						res,
-						202,
-						"ACCEPTED",
-						"Email sent for verification. Please check your inbox and enter the OTP to complete the authentication process.",
-					);
-				} else {
-					if (isPasswordExpired) {
-						tokenData = { id, role, isPasswordExpired };
+						await sendEmail(options);
+						return sendResponse(
+							res,
+							202,
+							"ACCEPTED",
+							"Email sent for verification. Please check your inbox and enter the OTP to complete the authentication process.",
+						);
 					} else {
-						tokenData = { id, role };
+						if (isPasswordExpired) {
+							tokenData = { id, role, isPasswordExpired };
+						} else {
+							tokenData = { id, role };
+						}
+						authenticationtoken = generateAccessToken(tokenData);
+						return sendResponse(
+							res,
+							200,
+							"SUCCESS",
+							"Login successfully!",
+							authenticationtoken,
+						);
 					}
-					authenticationtoken = generateAccessToken(tokenData);
-					return sendResponse(
-						res,
-						200,
-						"SUCCESS",
-						"Login successfully!",
-						authenticationtoken,
-					);
+				} catch (error) {
+					next(error);
 				}
 			});
 		},
@@ -248,18 +255,22 @@ export const handleGoogleAuth = async (
 		passport.authenticate(
 			"google",
 			async (err: Error, user: UserModelAttributes) => {
-				const userData = user;
-				const userExist = await read_function<UserModelAttributes>(
-					"User",
-					"findOne",
-					{ where: { email: userData.email } },
-				);
+				try {
+					const userData = user;
+					const userExist = await read_function<UserModelAttributes>(
+						"User",
+						"findOne",
+						{ where: { email: userData.email } },
+					);
 
-				if (userExist) {
-					return await handleUserLogin(res, userExist);
+					if (userExist) {
+						return await handleUserLogin(res, userExist);
+					}
+
+					return await handleNewUser(res, userData);
+				} catch (error) {
+					next(error);
 				}
-
-				return await handleNewUser(res, userData);
 			},
 		)(req, res, next);
 	} catch (error) {

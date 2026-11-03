@@ -4,10 +4,10 @@ import { cartCreationAttributes, cartModelAttributes } from "../../types/model";
 import { cartItem } from "../../types/cart";
 
 class Cart extends Model<cartModelAttributes, cartCreationAttributes> {
-	public id!: string;
-	public userId!: string;
-	public products!: cartItem[];
-	public total!: number;
+	declare id: string;
+	declare userId: string;
+	declare products: cartItem[];
+	declare total: number;
 
 }
 const cart_model = (sequelize: Sequelize) => {

@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import userController from "../controllers/userController";
 import authenticate from "../middlewares/auth";
@@ -8,14 +9,14 @@ const profileRouter = express.Router();
 
 profileRouter.get(
 	"/profile",
-	authenticate.authenticateUser,
-	userController.read_profile,
+	asyncHandler(authenticate.authenticateUser),
+	asyncHandler(userController.read_profile),
 );
 profileRouter.patch(
 	"/profile",
-	authenticate.authenticateUser,
-	fileUpload.single("profileImage"),
-	userMiddleware.validateProfile,
-	userController.update_user_profile,
+	asyncHandler(authenticate.authenticateUser),
+	asyncHandler(fileUpload.single("profileImage")),
+	asyncHandler(userMiddleware.validateProfile),
+	asyncHandler(userController.update_user_profile),
 );
 export default profileRouter;

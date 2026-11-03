@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import {
 	createReview,
@@ -16,33 +17,33 @@ import {
 } from "../middlewares/review.middleware";
 
 const reviewRouter = express.Router();
-reviewRouter.get("/", getAllReview);
+reviewRouter.get("/", asyncHandler(getAllReview));
 reviewRouter.post(
 	"/",
-	authentication.isBuyer,
-	productMiddlewares.IdValidated("productId", "ProductId"),
-	productMiddlewares.isProductAvailable("productId"),
-	isOrderDelivered,
-	isSalesDelivered,
-	reviewValidate,
-	createReview,
+	asyncHandler(authentication.isBuyer),
+	asyncHandler(productMiddlewares.IdValidated("productId", "ProductId")),
+	asyncHandler(productMiddlewares.isProductAvailable("productId")),
+	asyncHandler(isOrderDelivered),
+	asyncHandler(isSalesDelivered),
+	asyncHandler(reviewValidate),
+	asyncHandler(createReview),
 );
 reviewRouter.patch(
 	"/:id",
-	authentication.isBuyer,
-	productMiddlewares.IdValidated("id", "reviewId"),
-	isReviewAvailable("id"),
-	ReviewOwner,
-	reviewValidate,
-	updateReviews,
+	asyncHandler(authentication.isBuyer),
+	asyncHandler(productMiddlewares.IdValidated("id", "reviewId")),
+	asyncHandler(isReviewAvailable("id")),
+	asyncHandler(ReviewOwner),
+	asyncHandler(reviewValidate),
+	asyncHandler(updateReviews),
 );
 
 reviewRouter.delete(
 	"/:id",
-	authentication.isBuyer,
-	productMiddlewares.IdValidated("id", "reviewId"),
-	isReviewAvailable("id"),
-	ReviewOwner,
-	deleteReviews,
+	asyncHandler(authentication.isBuyer),
+	asyncHandler(productMiddlewares.IdValidated("id", "reviewId")),
+	asyncHandler(isReviewAvailable("id")),
+	asyncHandler(ReviewOwner),
+	asyncHandler(deleteReviews),
 );
 export default reviewRouter;

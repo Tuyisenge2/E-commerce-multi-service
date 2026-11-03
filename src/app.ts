@@ -1,3 +1,4 @@
+import { asyncHandler, requestErrorHandler } from "./requestErrors";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import session from "express-session";
@@ -40,12 +41,20 @@ app.use(
 );
 
 app.use("/api/v1", router);
-app.get("/api/v1", (_req: Request, res: Response) => {
-	res.status(200).json({
-		message: "Welcome to Hacker's e-commerce backend!",
-	});
-});
-app.get("/", (_req: Request, res: Response) => {
-	res.send(root_home_page);
-});
+app.get(
+	"/api/v1",
+	asyncHandler((_req: Request, res: Response) => {
+		res.status(200).json({
+			message: "Welcome to Hacker's e-commerce backend!",
+		});
+	}),
+);
+app.get(
+	"/",
+	asyncHandler((_req: Request, res: Response) => {
+		res.send(root_home_page);
+	}),
+);
+app.use(requestErrorHandler);
+
 export default app;

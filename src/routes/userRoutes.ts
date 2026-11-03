@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import userController from "../controllers/userController";
 import userMiddleware from "../middlewares/user.middleware";
@@ -8,55 +9,68 @@ import authentication from "../middlewares/auth";
 const userRoutes = express.Router();
 userRoutes.post(
 	"/register",
-	userMiddleware.userValid,
-	userController.registerUser,
+	asyncHandler(userMiddleware.userValid),
+	asyncHandler(userController.registerUser),
 );
 
 userRoutes.post(
 	"/login",
-	userMiddleware.logInValidated,
-	userMiddleware.checkAccountStatus,
-	userController.login,
+	asyncHandler(userMiddleware.logInValidated),
+	asyncHandler(userMiddleware.checkAccountStatus),
+	asyncHandler(userController.login),
 );
 
 userRoutes.post(
 	"/forgot-password",
-	userMiddleware.resetValidated,
-	forgotPassword,
+	asyncHandler(userMiddleware.resetValidated),
+	asyncHandler(forgotPassword),
 );
 userRoutes.post(
 	"/reset-password/:token",
-	userMiddleware.isPassword,
-	resetPasswort,
+	asyncHandler(userMiddleware.isPassword),
+	asyncHandler(resetPasswort),
 );
 userRoutes.patch(
 	"/password-update",
-	authentication.is_authenticated_when_password_expired,
-	userMiddleware.isUpdatePassValid,
-	userController.updatePassword,
+	asyncHandler(authentication.is_authenticated_when_password_expired),
+	asyncHandler(userMiddleware.isUpdatePassValid),
+	asyncHandler(userController.updatePassword),
 );
-userRoutes.get("/", authentication.isAdmin, userController.allUsers);
+userRoutes.get(
+	"/",
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(userController.allUsers),
+);
 userRoutes.patch(
 	"/:userId/account-status",
-	authentication.isAdmin,
-	userMiddleware.accountStatusValid,
-	userController.accountStatus,
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(userMiddleware.accountStatusValid),
+	asyncHandler(userController.accountStatus),
 );
-userRoutes.get("/account/verify/:token", userController.accountVerify);
+userRoutes.get(
+	"/account/verify/:token",
+	asyncHandler(userController.accountVerify),
+);
 userRoutes.post(
 	"/logout",
-	authentication.authenticateUser,
-	userController.logout,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(userController.logout),
 );
-userRoutes.get("/account/verify/:token", userController.accountVerify);
+userRoutes.get(
+	"/account/verify/:token",
+	asyncHandler(userController.accountVerify),
+);
 
 userRoutes.post(
 	"/2fa/:token",
-	otpIsValid,
-	userController.two_factor_authentication,
+	asyncHandler(otpIsValid),
+	asyncHandler(userController.two_factor_authentication),
 );
-userRoutes.get("/auth/google", userController.googleAuthInit);
+userRoutes.get("/auth/google", asyncHandler(userController.googleAuthInit));
 
-userRoutes.get("/auth/google/callback", userController.handleGoogleAuth);
+userRoutes.get(
+	"/auth/google/callback",
+	asyncHandler(userController.handleGoogleAuth),
+);
 
 export default userRoutes;

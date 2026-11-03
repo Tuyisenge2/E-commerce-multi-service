@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import wishesController from "../controllers/wishlistController";
 import userAuthentication from "../middlewares/auth";
@@ -7,24 +8,24 @@ const wishesRouter = express.Router();
 // create wish
 wishesRouter.post(
 	"/",
-	userAuthentication.isBuyer,
-	wishMiddlewares.isValidWish,
-	wishesController.createWishlist,
+	asyncHandler(userAuthentication.isBuyer),
+	asyncHandler(wishMiddlewares.isValidWish),
+	asyncHandler(wishesController.createWishlist),
 );
 
 // get all wishes
 wishesRouter.get(
 	"/",
-	userAuthentication.authenticateUser,
-	wishesController.getWishlist,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(wishesController.getWishlist),
 );
 
 // get a wish seller only
 wishesRouter.get(
 	"/:id",
-	userAuthentication.isSeller,
-	wishMiddlewares.userWishProduct,
-	wishesController.getSingleWishlist,
+	asyncHandler(userAuthentication.isSeller),
+	asyncHandler(wishMiddlewares.userWishProduct),
+	asyncHandler(wishesController.getSingleWishlist),
 );
 
 export default wishesRouter;

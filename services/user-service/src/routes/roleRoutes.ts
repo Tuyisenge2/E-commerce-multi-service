@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import {
 	createRole,
 	assignRole,
@@ -12,17 +13,26 @@ import {
 import authentication from "../middlewares/auth";
 export const roleRoutes = express.Router();
 
-roleRoutes.get("/roles/", authentication.isAdmin, allRole);
-roleRoutes.post("/roles/", authentication.isAdmin, roleNameValid, createRole);
+roleRoutes.get(
+	"/roles/",
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(allRole),
+);
+roleRoutes.post(
+	"/roles/",
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(roleNameValid),
+	asyncHandler(createRole),
+);
 roleRoutes.post(
 	"/users/:userId/roles",
-	authentication.isAdmin,
-	roleIdValidations,
-	assignRole,
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(roleIdValidations),
+	asyncHandler(assignRole),
 );
 roleRoutes.patch(
 	"/roles/:id",
-	authentication.isAdmin,
-	roleNameValid,
-	updateRole,
+	asyncHandler(authentication.isAdmin),
+	asyncHandler(roleNameValid),
+	asyncHandler(updateRole),
 );

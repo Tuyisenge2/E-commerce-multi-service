@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import paymentController from "../controllers/paymentController";
 import userAuthentication from "../middlewares/auth";
@@ -7,16 +8,16 @@ const paymentRouter = express.Router();
 
 paymentRouter.post(
 	"/",
-	userAuthentication.isBuyer,
-	paymentMiddlewares.paymentMethods(["stripe", "momo"]),
-	paymentMiddlewares.userHasCart,
-	paymentMiddlewares.cartHasProducts,
-	paymentMiddlewares.TAMOUNT_NOTBELOW(600),
-	paymentMiddlewares.validMomo,
-	paymentMiddlewares.requestToPay,
-	paymentController.create_checkout_session,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(paymentMiddlewares.paymentMethods(["stripe", "momo"])),
+	asyncHandler(paymentMiddlewares.userHasCart),
+	asyncHandler(paymentMiddlewares.cartHasProducts),
+	asyncHandler(paymentMiddlewares.TAMOUNT_NOTBELOW(600)),
+	asyncHandler(paymentMiddlewares.validMomo),
+	asyncHandler(paymentMiddlewares.requestToPay),
+	asyncHandler(paymentController.create_checkout_session),
 );
-paymentRouter.get("/success", paymentController.checkout_success);
-paymentRouter.post("/cancel", paymentController.checkout_cancel);
+paymentRouter.get("/success", asyncHandler(paymentController.checkout_success));
+paymentRouter.post("/cancel", asyncHandler(paymentController.checkout_cancel));
 
 export default paymentRouter;

@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import auth from "../middlewares/auth";
 import {
@@ -13,19 +14,25 @@ const cartRouter = express.Router();
 
 cartRouter.post(
 	"/",
-	auth.authenticateUser,
-	auth.isBuyer,
-	isCartValidated,
-	isProductExist,
-	addItemToCart,
+	asyncHandler(auth.authenticateUser),
+	asyncHandler(isCartValidated),
+	asyncHandler(isProductExist),
+	asyncHandler(addItemToCart),
 );
-cartRouter.get("/", auth.authenticateUser, auth.isBuyer, viewCart);
-cartRouter.put("/", auth.authenticateUser, auth.isBuyer, clearCart);
+cartRouter.get(
+	"/",
+	asyncHandler(auth.authenticateUser),
+	asyncHandler(viewCart),
+);
+cartRouter.put(
+	"/",
+	asyncHandler(auth.authenticateUser),
+	asyncHandler(clearCart),
+);
 cartRouter.patch(
 	"/",
-	auth.authenticateUser,
-	auth.isBuyer,
-	isProductExist,
-	updateCart,
+	asyncHandler(auth.authenticateUser),
+	asyncHandler(isProductExist),
+	asyncHandler(updateCart),
 );
 export default cartRouter;

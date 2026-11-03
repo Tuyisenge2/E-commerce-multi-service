@@ -18,10 +18,14 @@ export const config = (server: http.Server) => {
 	});
 
 	io.use(async (socketInstance, next) => {
-		if (await isLogin(socketInstance)) {
-			next();
-		} else {
-			socketInstance.disconnect(true);
+		try {
+			if (await isLogin(socketInstance)) {
+				next();
+			} else {
+				next(new Error("Authentication required"));
+			}
+		} catch {
+			next(new Error("Unable to authenticate connection"));
 		}
 	});
 

@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import userAuthentication from "../middlewares/auth";
 import {
@@ -10,35 +11,35 @@ import {
 import { notificationLogin, notificationPage } from "../utils/nodeEvents";
 const notificationRouter = express.Router();
 
-notificationRouter.get("/appnotifications", notificationPage);
-notificationRouter.get("/login", notificationLogin);
+notificationRouter.get("/appnotifications", asyncHandler(notificationPage));
+notificationRouter.get("/login", asyncHandler(notificationLogin));
 notificationRouter.get(
 	"/",
-	userAuthentication.authenticateUser,
-	read_allNotifications,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(read_allNotifications),
 );
 
 notificationRouter.get(
 	"/:id",
-	userAuthentication.authenticateUser,
-	read_oneNotification,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(read_oneNotification),
 );
 
 notificationRouter.patch(
 	"/:id",
-	userAuthentication.authenticateUser,
-	update_notification,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(update_notification),
 );
 
 notificationRouter.patch(
 	"/",
-	userAuthentication.authenticateUser,
-	mark_all_as_read,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(mark_all_as_read),
 );
 
 notificationRouter.delete(
 	"/:id",
-	userAuthentication.authenticateUser,
-	delete_notification,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(delete_notification),
 );
 export default notificationRouter;

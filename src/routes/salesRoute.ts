@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import salesController from "../controllers/salesController";
 import authentication from "../middlewares/auth";
@@ -7,24 +8,24 @@ const salesRoutes = express.Router();
 
 salesRoutes.get(
 	"/",
-	authentication.authenticateUser,
-	authentication.isSeller,
-	salesController.allSales,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(authentication.isSeller),
+	asyncHandler(salesController.allSales),
 );
 
 salesRoutes.get(
 	"/:id",
-	authentication.authenticateUser,
-	authentication.isSeller,
-	salesController.singleSale,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(authentication.isSeller),
+	asyncHandler(salesController.singleSale),
 );
 
 salesRoutes.patch(
 	"/:id/status",
-	authentication.authenticateUser,
-	authentication.isSeller,
-	orderSalesValid,
-	salesController.updateOrderStatus,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(authentication.isSeller),
+	asyncHandler(orderSalesValid),
+	asyncHandler(salesController.updateOrderStatus),
 );
 
 export default salesRoutes;

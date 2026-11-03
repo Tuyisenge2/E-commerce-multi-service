@@ -24,14 +24,13 @@ import {
 import { insert_function, read_function } from "../utils/db_methods";
 import { sendResponse } from "../utils/http.exception";
 import {
-	BASE_URL,
 	MTN_MOMO_REQUEST_PAYMENT_URL,
 	MTN_MOMO_SUBSCRIPTION_KEY,
 	MTN_MOMO_TARGET_ENVIRONMENT,
 } from "../utils/keys";
 import { getToken } from "../utils/momoMethods";
 import { getUserById } from "../clients/userClient";
-import { clearCart, getCartByUserId } from "../clients/cartClient";
+import { getCartByUserId } from "../clients/cartClient";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 	apiVersion: "2024-04-10",
@@ -40,13 +39,21 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 export const create_checkout_session = async (req: Request, res: Response) => {
 	try {
 		if (req.query.method === "stripe") {
+			const successUrl = process.env.STRIPE_SUCCESS_URL;
+			const cancelUrl = process.env.STRIPE_CANCEL_URL;
+			if (!successUrl || !cancelUrl) {
+				throw new Error("STRIPE_SUCCESS_URL and STRIPE_CANCEL_URL must be configured");
+			}
 			const loggedUser = (req as ExpandedRequest).user;
-			const condition = { where: { id: loggedUser?.id } };
 			const authToken = req.headers.authorization?.replace("Bearer ", "") ?? "";
 			const user = (await getUserById(
 				loggedUser?.id as string,
 				authToken,
 			)) as UserModelAttributes;
+			const checkoutSuccessUrl = new URL(successUrl);
+			checkoutSuccessUrl.searchParams.delete("session_id");
+			checkoutSuccessUrl.searchParams.set("sessionId", "{CHECKOUT_SESSION_ID}");
+			checkoutSuccessUrl.searchParams.set("payerId", user.id);
 
 			const cart = (req as CartRequest).cart;
 			const line_items = lineCartItems(cart);
@@ -58,8 +65,11 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 				billing_address_collection: "auto",
 				customer: customer.id,
 				metadata: { payerId: user.id },
-				success_url: `${BASE_URL}/payments/success?sessionId={CHECKOUT_SESSION_ID}&payerId=${user.id}`,
-				cancel_url: `${BASE_URL}/api/v1/payments/cancel`,
+				success_url: checkoutSuccessUrl.toString().replace(
+					"%7BCHECKOUT_SESSION_ID%7D",
+					"{CHECKOUT_SESSION_ID}",
+				),
+				cancel_url: cancelUrl,
 			});
 			return sendResponse(
 				res,
@@ -98,7 +108,7 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 			const transactionData = (req as TransactionRequest).transactionData;
 			// save payment info
 			if (!transactionExist) {
-				const userId = (req as ExpandedRequest).user?.id;
+				const userId = (req as ExpandedRequest).user?.id as string;
 				await recordPaymentDetails({
 					payerId: userId,
 					paymentId: XReferenceId,
@@ -121,9 +131,6 @@ export const create_checkout_session = async (req: Request, res: Response) => {
 						{ where: { id: transactionExist.id } },
 					);
 				}
-				await clearCart(
-					req.headers.authorization?.replace("Bearer ", "") ?? "",
-				);
 			}
 
 			return sendResponse(

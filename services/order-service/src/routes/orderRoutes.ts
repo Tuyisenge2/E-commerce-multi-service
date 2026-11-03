@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import orderController from "../controllers/orderController";
 import authentication from "../middlewares/auth";
@@ -6,16 +7,16 @@ const orderRoutes = express.Router();
 
 orderRoutes.get(
 	"/",
-	authentication.authenticateUser,
-	authentication.isBuyer,
-	orderController.getOrders,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(authentication.isBuyer),
+	asyncHandler(orderController.getOrders),
 );
 
 orderRoutes.get(
 	"/:id",
-	authentication.authenticateUser,
-	authentication.isBuyer,
-	orderController.getSingleOrder,
+	asyncHandler(authentication.authenticateUser),
+	asyncHandler(authentication.isBuyer),
+	asyncHandler(orderController.getSingleOrder),
 );
 
 export default orderRoutes;

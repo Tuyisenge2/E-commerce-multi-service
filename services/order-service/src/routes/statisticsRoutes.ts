@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import { sellerStatistics } from "../controllers/sellerStatisticsController";
 
@@ -7,8 +8,8 @@ export const statisticsRouter = express.Router();
 
 statisticsRouter.get(
 	"/stats",
-	authenticate.authenticateUser,
-	authenticate.isSeller,
+	asyncHandler(authenticate.authenticateUser),
+	asyncHandler(authenticate.isSeller),
 
-	sellerStatistics,
+	asyncHandler(sellerStatistics),
 );

@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 
 import authenticate from "../middlewares/auth";
@@ -7,7 +8,7 @@ export const AdminstatisticsRouter = express.Router();
 
 AdminstatisticsRouter.get(
 	"/admin/stats",
-	authenticate.authenticateUser,
-	authenticate.isAdmin,
-	adminStatistics,
+	asyncHandler(authenticate.authenticateUser),
+	asyncHandler(authenticate.isAdmin),
+	asyncHandler(adminStatistics),
 );

@@ -58,6 +58,7 @@ export const isLogin = async (socket: ExtendedSocket): Promise<boolean> => {
 
 const authenticateUser = (request: ExpandedRequest, response: Response, next: NextFunction) =>
 	authenticate(request, response, next);
+
 const is_authenticated_when_password_expired = (
 	request: ExpandedRequest,
 	response: Response,

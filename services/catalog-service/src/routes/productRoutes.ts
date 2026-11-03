@@ -1,3 +1,4 @@
+import { asyncHandler } from "../requestErrors";
 import express from "express";
 import userAuthentication from "../middlewares/auth";
 import productController from "../controllers/productController";
@@ -9,61 +10,68 @@ import { getReviewsOnProduct } from "../controllers/review.controller";
 
 const productRouter = express.Router();
 
-productRouter.get("/search", searchMiddleware, searchProduct.search_product);
+productRouter.get(
+	"/search",
+	asyncHandler(searchMiddleware),
+	asyncHandler(searchProduct.search_product),
+);
 
 productRouter.post(
 	"/",
-	userAuthentication.isSeller,
-	fileUpload.array("images"),
-	productMiddlewares.isValidProduct,
-	productController.create_product,
+	asyncHandler(userAuthentication.isSeller),
+	asyncHandler(fileUpload.array("images")),
+	asyncHandler(productMiddlewares.isValidProduct),
+	asyncHandler(productController.create_product),
 );
 
 productRouter.get(
 	"/",
-	userAuthentication.authenticateUser,
-	productController.read_all_products,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(productController.read_all_products),
 );
-productRouter.get("/guest-products", productController.guest_read_all_products);
+productRouter.get(
+	"/guest-products",
+	asyncHandler(productController.guest_read_all_products),
+);
 
 productRouter.get(
 	"/guest-products/:id",
-	productController.guest_read_single_product,
+	asyncHandler(productController.guest_read_single_product),
 );
 productRouter.get(
 	"/:id",
-	userAuthentication.authenticateUser,
-	productController.read_single_product,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(productController.read_single_product),
 );
 
 productRouter.post(
 	"/recommended",
-	userAuthentication.authenticateUser,
-	productController.getRecommendedProducts,
+	asyncHandler(userAuthentication.authenticateUser),
+	asyncHandler(productController.getRecommendedProducts),
 );
 
 productRouter.patch(
 	"/:id",
-	userAuthentication.isSeller,
-	fileUpload.array("images"),
-	productController.update_product,
+	asyncHandler(userAuthentication.isSeller),
+	asyncHandler(fileUpload.array("images")),
+	asyncHandler(productController.update_product),
 );
 productRouter.patch(
 	"/:id/availability-status",
-	userAuthentication.isSeller,
-	productController.update_product_status,
+	asyncHandler(userAuthentication.isSeller),
+	asyncHandler(productController.update_product_status),
 );
 
 productRouter.delete(
 	"/:id",
-	userAuthentication.isSeller,
-	productController.delete_product,
+	asyncHandler(userAuthentication.isSeller),
+	asyncHandler(productController.delete_product),
 );
 productRouter.get(
 	"/:id/reviews/",
-	productMiddlewares.IdValidated("id", "reviewId"),
-	productMiddlewares.isProductAvailable("id"),
-	getReviewsOnProduct,
+	asyncHandler(productMiddlewares.IdValidated("id", "reviewId")),
+	asyncHandler(productMiddlewares.isProductAvailable("id")),
+	asyncHandler(getReviewsOnProduct),
 );
 
 export default productRouter;
